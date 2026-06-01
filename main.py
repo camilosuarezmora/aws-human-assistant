@@ -1,15 +1,46 @@
 """
 Calculador de Costos de AWS con Pydantic AI.
 
-Punto de entrada: python main.py
+  CLI:  python main.py
+  GUI:  python main.py --gui
+        streamlit run gui.py
 """
 
+import argparse
 import asyncio
+import subprocess
+import sys
+from pathlib import Path
 
 from aws_cost.config import load_environment
-from aws_cost.cli import main as run_cli
 
 load_environment()
 
+
+def _launch_gui() -> None:
+    gui_path = Path(__file__).resolve().parent / 'gui.py'
+    subprocess.run(
+        [sys.executable, '-m', 'streamlit', 'run', str(gui_path), '--server.headless', 'true'],
+        check=False,
+    )
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description='Calculadora de costos AWS')
+    parser.add_argument(
+        '--gui',
+        action='store_true',
+        help='Abre la interfaz grafica (Streamlit)',
+    )
+    args = parser.parse_args()
+
+    if args.gui:
+        _launch_gui()
+    else:
+        from aws_cost.cli import main as run_cli
+
+        asyncio.run(run_cli())
+
+
 if __name__ == '__main__':
-    asyncio.run(run_cli())
+    main()
