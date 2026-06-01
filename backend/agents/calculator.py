@@ -1,8 +1,8 @@
 from pydantic_ai import Agent
-from pydantic_ai.models.groq import GroqModel
 
-from aws_cost.models import EstimadoCostoAWS
-from aws_cost.tools import ALL_TOOLS
+from backend.agents.base import crear_modelo_groq
+from backend.models import EstimadoCostoAWS
+from backend.tools import ALL_TOOLS
 
 SYSTEM_PROMPT = """
 Eres un experto en costos de AWS. Tu trabajo es calcular estimaciones de costos
@@ -39,10 +39,9 @@ RESPONDE EN ESPAÑOL de forma clara y concisa.
 
 
 def crear_agente() -> Agent[None, EstimadoCostoAWS]:
-    """Crea y devuelve el agente calculador de costos AWS."""
-    model = GroqModel(model_name='llama-3.3-70b-versatile')
+    """Crea el agente calculador de costos AWS."""
     return Agent(
-        model=model,
+        model=crear_modelo_groq(),
         tools=ALL_TOOLS,
         system_prompt=SYSTEM_PROMPT,
         output_type=EstimadoCostoAWS,

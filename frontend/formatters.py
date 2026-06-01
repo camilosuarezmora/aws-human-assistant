@@ -1,6 +1,6 @@
-"""Formato de estimaciones para CLI y GUI."""
+"""Formato de estimaciones para presentación en CLI y Streamlit."""
 
-from aws_cost.models import EstimadoCostoAWS
+from backend.models import EstimadoCostoAWS
 
 
 def estimacion_a_filas(estimacion: EstimadoCostoAWS) -> list[dict[str, object]]:

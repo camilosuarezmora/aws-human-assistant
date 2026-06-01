@@ -1,9 +1,9 @@
 """Clasificación de prompts antes de invocar el agente con tools."""
 
 from pydantic_ai import Agent
-from pydantic_ai.models.groq import GroqModel
 
-from aws_cost.models import ValidacionPrompt
+from backend.agents.base import crear_modelo_groq
+from backend.models import ValidacionPrompt
 
 VALIDATOR_INSTRUCTIONS = """
 Clasifica si el mensaje del usuario pertenece a esta aplicación: una calculadora de
@@ -36,9 +36,8 @@ MENSAJE_OFF_TOPIC = (
 
 def crear_validador() -> Agent[None, ValidacionPrompt]:
     """Agente clasificador sin tools."""
-    model = GroqModel(model_name='llama-3.3-70b-versatile')
     return Agent(
-        model=model,
+        model=crear_modelo_groq(),
         instructions=VALIDATOR_INSTRUCTIONS,
         output_type=ValidacionPrompt,
     )

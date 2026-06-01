@@ -12,7 +12,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from aws_cost.config import load_environment
+from backend.config import load_environment
 
 load_environment()
 
@@ -37,7 +37,7 @@ def main() -> None:
     if args.gui:
         _launch_gui()
     else:
-        from aws_cost.cli import main as run_cli
+        from frontend.cli.app import run as run_cli
 
         asyncio.run(run_cli())
 

@@ -2,8 +2,9 @@
 
 import streamlit as st
 
-from aws_cost.models import EstimadoCostoAWS
-from aws_cost.presentation import estimacion_a_filas, formatear_estimacion_texto
+from backend.models import EstimadoCostoAWS
+from backend.services.calculator import reiniciar_sesion
+from frontend.formatters import estimacion_a_filas, formatear_estimacion_texto
 
 
 def render_sidebar() -> None:
@@ -27,8 +28,6 @@ def render_sidebar() -> None:
         if st.button('Nueva conversacion', use_container_width=True):
             st.session_state.ui_messages = []
             if st.session_state.calculator_session is not None:
-                from aws_cost.service import reiniciar_sesion
-
                 reiniciar_sesion(st.session_state.calculator_session)
             st.rerun()
 

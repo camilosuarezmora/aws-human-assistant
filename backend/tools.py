@@ -1,7 +1,7 @@
 """Herramientas de cálculo de costos expuestas al agente."""
 
-from aws_cost.models import CostoItem
-from aws_cost import pricing as p
+from backend.models import CostoItem
+from backend import pricing as p
 
 
 def costo_ec2(tipo_instancia: str, cantidad: int = 1, region: str = 'us-east-1') -> CostoItem:

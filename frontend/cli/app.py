@@ -1,7 +1,9 @@
 """Interfaz de línea de comandos interactiva."""
 
-from aws_cost.presentation import formatear_estimacion_texto
-from aws_cost.service import crear_sesion, procesar_mensaje
+import asyncio
+
+from backend.services.calculator import crear_sesion, procesar_mensaje
+from frontend.formatters import formatear_estimacion_texto
 
 EXIT_COMMANDS = frozenset({'salir', 'exit', 'quit', 'q'})
 
@@ -20,7 +22,7 @@ def imprimir_banner() -> None:
     print('-' * 80)
 
 
-async def main() -> None:
+async def run() -> None:
     """Bucle principal de la CLI."""
     imprimir_banner()
     sesion = crear_sesion()

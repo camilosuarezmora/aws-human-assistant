@@ -1,18 +1,18 @@
-"""Orquestación compartida entre CLI y GUI."""
+"""Orquestación del dominio: sesión, validación y agente de costos."""
 
 from dataclasses import dataclass, field
 
 from pydantic_ai import Agent
 from pydantic_ai.messages import ModelMessage
 
-from aws_cost.agent import crear_agente
-from aws_cost.models import EstimadoCostoAWS
-from aws_cost.prompt_validator import crear_validador, mensaje_advertencia, validar_prompt
+from backend.agents.calculator import crear_agente
+from backend.agents.validator import crear_validador, mensaje_advertencia, validar_prompt
+from backend.models import EstimadoCostoAWS
 
 
 @dataclass
 class CalculatorSession:
-    """Estado de una sesión de calculadora (agente + memoria)."""
+    """Estado de una sesión (agente + validador + memoria)."""
 
     agent: Agent
     validador: Agent
@@ -40,7 +40,7 @@ def crear_sesion() -> CalculatorSession:
 async def procesar_mensaje(sesion: CalculatorSession, texto: str) -> ProcessResult:
     """
     Valida el prompt y, si es relevante, ejecuta el agente con tools.
-    Actualiza el historial de la sesión solo en ejecuciones exitosas.
+    Actualiza el historial solo en ejecuciones exitosas.
     """
     texto = texto.strip()
     if not texto:

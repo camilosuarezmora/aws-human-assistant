@@ -4,9 +4,9 @@ import asyncio
 
 import streamlit as st
 
-from aws_cost.presentation import formatear_estimacion_texto
-from aws_cost.service import crear_sesion, procesar_mensaje
-from aws_cost.ui.components import render_chat_history, render_sidebar
+from backend.services.calculator import crear_sesion, procesar_mensaje
+from frontend.formatters import formatear_estimacion_texto
+from frontend.streamlit.components import render_chat_history, render_sidebar
 
 
 def _init_session_state() -> None:
