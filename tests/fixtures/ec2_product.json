@@ -1,0 +1,23 @@
+{
+  "product": {
+    "attributes": {
+      "instanceType": "t3.micro",
+      "regionCode": "us-east-1",
+      "operatingSystem": "Linux"
+    }
+  },
+  "terms": {
+    "OnDemand": {
+      "JRTCKXETXF": {
+        "priceDimensions": {
+          "JRTCKXETXF.6YS6EN2CT7": {
+            "unit": "Hrs",
+            "pricePerUnit": {
+              "USD": "0.0104"
+            }
+          }
+        }
+      }
+    }
+  }
+}

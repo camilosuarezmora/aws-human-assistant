@@ -35,7 +35,8 @@ Aplicación que estima costos de infraestructura en **AWS** a partir de pregunta
 | **Groq** (`llama-3.3-70b-versatile`) | Modelo de lenguaje |
 | **Pydantic** | Modelos y validación de salida |
 | **Streamlit** | Interfaz gráfica |
-| **python-dotenv** | Variables de entorno (`GROQ_API_KEY`) |
+| **python-dotenv** | Variables de entorno (`GROQ_API_KEY`, credenciales AWS) |
+| **boto3** | AWS Price List API (EC2 y RDS con caché) |
 
 ## Arquitectura
 
@@ -99,7 +100,7 @@ flowchart TB
 | **Frontend → Backend** | `frontend/` solo importa desde `backend/`. Nunca al revés. |
 | **Sin UI en backend** | `backend/` no importa Streamlit ni código de terminal. |
 | **Punto único de orquestación** | Toda petición del usuario pasa por `procesar_mensaje()` en `backend/services/calculator.py`. |
-| **Precios estáticos** | Los cálculos numéricos viven en `pricing.py` + `tools.py`; el LLM elige qué tools llamar. |
+| **Precios** | EC2/RDS: `pricing_resolver.py` (API + caché + fallback a `pricing.py`); otros servicios: solo `pricing.py`. |
 
 ## Mapa del código
 
@@ -118,7 +119,10 @@ pydantic-ai/
 │   ├── __init__.py              # API pública: crear_sesion, procesar_mensaje, modelos…
 │   ├── config.py                # PROJECT_ROOT, GROQ_MODEL_NAME, load_environment()
 │   ├── models.py                # CostoItem, EstimadoCostoAWS, ValidacionPrompt
-│   ├── pricing.py               # Diccionarios y constantes USD (us-east-1)
+│   ├── pricing.py               # Diccionarios estáticos y fallback USD
+│   ├── aws_pricing_client.py    # Cliente boto3 GetProducts (EC2/RDS)
+│   ├── pricing_cache.py         # Caché en memoria con TTL
+│   ├── pricing_resolver.py      # API + caché + fallback para tools EC2/RDS
 │   ├── tools.py                 # Funciones @tool para el agente + ALL_TOOLS
 │   │
 │   ├── agents/
@@ -165,7 +169,8 @@ pydantic-ai/
 | `main.py` | Argumentos CLI/GUI; carga `.env` al importar | `backend.config`, `frontend.cli` |
 | `gui.py` | Wrapper de una línea para Streamlit | `backend.config`, `frontend.streamlit.app` |
 | `hello_world.py` | Ejemplo independiente de Pydantic AI + Groq | Solo `pydantic_ai`, `dotenv` |
-| `.env.example` | Documenta la variable `GROQ_API_KEY` requerida | — |
+| `.env.example` | `GROQ_API_KEY` y credenciales AWS opcionales para precios en vivo | — |
+| `pytest.ini` | Configuración de tests (`tests/`) | — |
 
 ---
 
@@ -181,6 +186,9 @@ Paquete sin dependencias de UI. Contiene modelos, precios, agentes LLM y la orqu
 | `GROQ_MODEL_NAME` | Modelo por defecto: `llama-3.3-70b-versatile` |
 | `DEFAULT_REGION` | Región AWS por defecto: `us-east-1` |
 | `load_environment()` | Carga `PROJECT_ROOT/.env` con `python-dotenv` |
+| `pricing_api_region()` | Endpoint del cliente pricing (`PRICING_API_REGION`, default `us-east-1`) |
+| `pricing_cache_ttl_seconds()` | TTL de caché (`PRICING_CACHE_TTL_SECONDS`, default 86400) |
+| `aws_pricing_enabled()` | Activa/desactiva API (`AWS_PRICING_ENABLED`, default true) |
 
 #### `backend/models.py`
 
@@ -199,14 +207,23 @@ Tablas y constantes en USD (referencia aproximada, región us-east-1):
 - `PRECIOS_EC2_US_EAST_1`, `PRECIOS_RDS_US_EAST_1`, `PRECIOS_ELASTICACHE`
 - Constantes unitarias: S3, transferencia, Lambda, API Gateway, DynamoDB, SNS, SQS, storage RDS
 
-**No** llama a APIs de AWS; son datos estáticos editables.
+Datos estáticos editables y **fallback** cuando la API no está disponible o falla.
+
+#### `backend/aws_pricing_client.py`, `pricing_cache.py`, `pricing_resolver.py`
+
+- **Cliente**: `get_products` / `precio_on_demand_hora` con filtros EC2 (Linux On-Demand) y RDS (MySQL Single-AZ por defecto).
+- **Caché**: clave por servicio, región e instancia; TTL configurable (24 h por defecto).
+- **Resolver**: `precio_ec2_mensual`, `precio_rds_mensual` (730 h/mes); sin credenciales o con `AWS_PRICING_ENABLED=false` usa solo `pricing.py`.
+
+IAM mínimo recomendado: `pricing:GetProducts`, `pricing:DescribeServices`, `pricing:GetAttributeValues`.
 
 #### `backend/tools.py`
 
-Funciones registradas como tools del agente. Cada una:
+Funciones registradas como tools del agente:
 
-1. Lee precios de `pricing.py`
-2. Devuelve un `CostoItem`
+- **EC2/RDS**: precios vía `pricing_resolver` (API + caché + fallback).
+- **Resto**: lectura directa de `pricing.py`.
+- Devuelven un `CostoItem`.
 
 Lista exportada: `ALL_TOOLS` (9 herramientas, ver tabla de servicios arriba).
 
@@ -399,7 +416,8 @@ python hello_world.py
 | Si quieres… | Empieza por… |
 |-------------|--------------|
 | Entender el flujo completo | [`backend/services/calculator.py`](backend/services/calculator.py) |
-| Ver cómo se calcula un precio | [`backend/tools.py`](backend/tools.py) → [`backend/pricing.py`](backend/pricing.py) |
+| Ver cómo se calcula un precio EC2/RDS | [`backend/tools.py`](backend/tools.py) → [`backend/pricing_resolver.py`](backend/pricing_resolver.py) |
+| Precios estáticos / fallback | [`backend/pricing.py`](backend/pricing.py) |
 | Cambiar el comportamiento del LLM | [`backend/agents/calculator.py`](backend/agents/calculator.py) |
 | Ajustar qué preguntas se aceptan | [`backend/agents/validator.py`](backend/agents/validator.py) |
 | Modificar la terminal | [`frontend/cli/app.py`](frontend/cli/app.py) |
@@ -407,13 +425,28 @@ python hello_world.py
 | Cambiar cómo se muestran los totales | [`frontend/formatters.py`](frontend/formatters.py) |
 | Añadir una nueva UI (p. ej. FastAPI) | Crea módulo en `frontend/` que llame solo a `procesar_mensaje` |
 
+## Precios en vivo (EC2 y RDS)
+
+1. Copia variables de [`.env.example`](.env.example) y configura `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` (o perfil `~/.aws/credentials`).
+2. Con credenciales válidas, `costo_ec2` y `costo_rds` consultan la [AWS Price List Query API](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/price-changes.html); los resultados se cachean en memoria.
+3. Sin credenciales o si la API falla, se usan las tablas de [`backend/pricing.py`](backend/pricing.py) sin interrumpir la app.
+
+```bash
+pip install -r requirements.txt
+pytest -m "not integration"
+# Con AWS configurado:
+pytest -m integration
+```
+
 ## Limitaciones y avisos
 
-- Los precios son **aproximados** y se basan en tablas estáticas en `backend/pricing.py`.
-- Por defecto se usa la región **us-east-1** (N. Virginia) salvo que indiques otra en la pregunta.
+- **EC2/RDS** pueden usar precios API; el resto de servicios siguen en tablas estáticas (`pricing.py`).
+- El fallback estático solo cataloga **us-east-1**; otras regiones en fallback usan esos valores como aproximación.
+- RDS vía API asume **MySQL Single-AZ** On-Demand salvo ampliación futura de parámetros.
+- Conversión mensual: precio hora × **730** (convención tipo AWS Calculator).
 - **No** se incluyen impuestos, AWS Free Tier, Reserved Instances ni descuentos por volumen.
 - Las estimaciones no sustituyen la [Calculadora de precios de AWS](https://calculator.aws/) ni facturación real.
-- La aplicación requiere acceso a la **API de Groq**; sin `GROQ_API_KEY` válida no funcionará el agente.
+- La aplicación requiere **Groq** (`GROQ_API_KEY`); AWS es opcional solo para precios EC2/RDS.
 
 ## Referencias
 

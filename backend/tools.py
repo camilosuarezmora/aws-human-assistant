@@ -2,11 +2,12 @@
 
 from backend.models import CostoItem
 from backend import pricing as p
+from backend.pricing_resolver import precio_ec2_mensual, precio_rds_mensual
 
 
 def costo_ec2(tipo_instancia: str, cantidad: int = 1, region: str = 'us-east-1') -> CostoItem:
     """Calcula costo de instancias EC2."""
-    precio = p.PRECIOS_EC2_US_EAST_1.get(tipo_instancia.lower(), 0.05)
+    precio = precio_ec2_mensual(tipo_instancia, region)
     costo_total = precio * cantidad
     return CostoItem(
         servicio='EC2',
@@ -17,15 +18,22 @@ def costo_ec2(tipo_instancia: str, cantidad: int = 1, region: str = 'us-east-1')
     )
 
 
-def costo_rds(tipo_instancia: str, cantidad: int = 1, storage_gb: int = 20) -> CostoItem:
+def costo_rds(
+    tipo_instancia: str,
+    cantidad: int = 1,
+    storage_gb: int = 20,
+    region: str = 'us-east-1',
+) -> CostoItem:
     """Calcula costo de RDS (base de datos gestionada)."""
-    precio_instancia = p.PRECIOS_RDS_US_EAST_1.get(tipo_instancia.lower(), 0.05)
+    precio_instancia = precio_rds_mensual(tipo_instancia, region)
     costo_instancia = precio_instancia * cantidad
     costo_storage = p.PRECIO_RDS_STORAGE_POR_GB * storage_gb * cantidad
     costo_total = costo_instancia + costo_storage
     return CostoItem(
         servicio='RDS',
-        descripcion=f'{cantidad} instancia(s) {tipo_instancia} con {storage_gb}GB storage',
+        descripcion=(
+            f'{cantidad} instancia(s) {tipo_instancia} con {storage_gb}GB storage ({region})'
+        ),
         cantidad=cantidad,
         costo_unitario_mensual=costo_total / cantidad,
         costo_total_mensual=costo_total,
