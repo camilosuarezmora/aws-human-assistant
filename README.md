@@ -413,6 +413,20 @@ streamlit run gui.py
 
 Se abrirá la calculadora en el navegador (por defecto en `http://localhost:8501`).
 
+### Streamlit Cloud
+
+1. Conecta el repositorio en [share.streamlit.io](https://share.streamlit.io).
+2. **Main file path:** `gui.py`
+3. En **Settings → Secrets**, define al menos:
+
+```toml
+GROQ_API_KEY = "gsk_tu_clave_de_groq"
+```
+
+4. Guarda; la app se reinicia sola. Sin esta clave verás un aviso en pantalla (no un traceback).
+
+Para desarrollo local con secretos de Streamlit, copia `.streamlit/secrets.toml.example` a `.streamlit/secrets.toml` (ese archivo está en `.gitignore`).
+
 ### Ejemplo mínimo (opcional)
 
 [`hello_world.py`](hello_world.py) es un chat sencillo con Pydantic AI y Groq, **sin** herramientas ni lógica AWS:

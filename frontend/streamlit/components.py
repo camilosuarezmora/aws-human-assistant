@@ -49,8 +49,9 @@ def render_sidebar() -> None:
             st.session_state.intake_completado = False
             st.session_state.pop('contexto_negocio', None)
             st.session_state.pop('mensaje_inicial_pendiente', None)
-            if st.session_state.calculator_session is not None:
+            if st.session_state.get('calculator_session') is not None:
                 reiniciar_sesion(st.session_state.calculator_session)
+            st.session_state.calculator_session = None
             st.rerun()
 
 

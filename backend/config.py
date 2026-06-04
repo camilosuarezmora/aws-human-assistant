@@ -7,10 +7,34 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 GROQ_MODEL_NAME = 'llama-3.3-70b-versatile'
 DEFAULT_REGION = 'us-east-1'
 
+# Variables que Streamlit Cloud suele definir en Secrets (además de .env local).
+STREAMLIT_SECRET_KEYS = (
+    'GROQ_API_KEY',
+    'AWS_ACCESS_KEY_ID',
+    'AWS_SECRET_ACCESS_KEY',
+    'AWS_DEFAULT_REGION',
+    'PRICING_API_REGION',
+    'PRICING_CACHE_TTL_SECONDS',
+    'AWS_PRICING_ENABLED',
+)
 
-def load_environment() -> None:
-    """Carga variables de entorno desde .env en la raíz del proyecto."""
+
+def _apply_env_vars(values: dict[str, str] | None) -> None:
+    if not values:
+        return
+    for key, value in values.items():
+        if value and key not in os.environ:
+            os.environ[key] = value
+
+
+def load_environment(*, extra_env: dict[str, str] | None = None) -> None:
+    """Carga .env y, opcionalmente, variables extra (p. ej. st.secrets en Streamlit Cloud)."""
     load_dotenv(PROJECT_ROOT / '.env')
+    _apply_env_vars(extra_env)
+
+
+def groq_api_key_configured() -> bool:
+    return bool(os.getenv('GROQ_API_KEY', '').strip())
 
 
 def _env_bool(name: str, default: str = 'true') -> bool:
