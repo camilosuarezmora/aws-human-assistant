@@ -1,0 +1,10 @@
+{
+  "tipo_negocio": "Blog o sitio de contenidos",
+  "problema": "Publicar artículos con imágenes y buen rendimiento global",
+  "rango_usuarios": "50_500",
+  "sensibilidad_datos": "baja",
+  "presupuesto_mensual_usd": null,
+  "region": "us-east-1",
+  "preferencia": "simple",
+  "restricciones": []
+}

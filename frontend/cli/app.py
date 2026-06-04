@@ -3,20 +3,19 @@
 import asyncio
 
 from backend.services.calculator import crear_sesion, procesar_mensaje
-from frontend.formatters import formatear_estimacion_texto
+from frontend.formatters import formatear_estimacion_texto, formatear_propuesta_markdown
 
 EXIT_COMMANDS = frozenset({'salir', 'exit', 'quit', 'q'})
 
 
 def imprimir_banner() -> None:
     print('=' * 80)
-    print('CALCULADORA DE COSTOS AWS con Pydantic AI')
+    print('ASESOR AWS con Pydantic AI')
     print('=' * 80)
-    print('\nEjemplos de preguntas:')
-    print('  - Cuantas cuestan 3 instancias t3.medium?')
-    print('  - Necesito 1 RDS db.t3.small con 100GB de storage')
-    print('  - Calcula: 2x t3.micro, 50GB S3, 1 RDS t3.small')
-    print('  - App con Lambda + API Gateway + DynamoDB')
+    print('\nDescribe tu negocio o necesidad en lenguaje cotidiano, por ejemplo:')
+    print('  - Tienda online con 500 visitas al dia y poco presupuesto')
+    print('  - App de reservas para 20 empleados con login de usuarios')
+    print('  - Tambien puedes pedir costos tecnicos: 2x t3.medium y 100GB S3')
     print("\nEscribe 'salir' para terminar")
     print('Para la interfaz grafica: streamlit run gui.py\n')
     print('-' * 80)
@@ -36,7 +35,7 @@ async def run() -> None:
             if not user_input:
                 continue
 
-            print('\nValidando y calculando...')
+            print('\nProcesando (arquitectura, costes, hoja de ruta)...')
             resultado = await procesar_mensaje(sesion, user_input)
 
             if resultado.advertencia:
@@ -45,7 +44,9 @@ async def run() -> None:
             if resultado.error:
                 print(f'\nError: {resultado.error}')
                 continue
-            if resultado.estimacion:
+            if resultado.propuesta:
+                print('\n' + formatear_propuesta_markdown(resultado.propuesta))
+            elif resultado.estimacion:
                 print('\n' + formatear_estimacion_texto(resultado.estimacion))
 
         except KeyboardInterrupt:

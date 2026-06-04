@@ -1,0 +1,10 @@
+{
+  "tipo_negocio": "Tienda online / e-commerce",
+  "problema": "Vender productos con carrito y pagos online",
+  "rango_usuarios": "500_5000",
+  "sensibilidad_datos": "media",
+  "presupuesto_mensual_usd": 200.0,
+  "region": "us-east-1",
+  "preferencia": "equilibrado",
+  "restricciones": ["sin administrar servidores"]
+}

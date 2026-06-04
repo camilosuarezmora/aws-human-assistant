@@ -1,0 +1,56 @@
+{
+  "arquitectura": {
+    "resumen_ejecutivo": "Solución serverless para la tienda.",
+    "componentes": [
+      {
+        "servicio": "Lambda",
+        "rol": "Backend API",
+        "supuesto": "1M peticiones al mes",
+        "millones_peticiones": 1.0,
+        "gb_segundos": 10.0
+      },
+      {
+        "servicio": "S3",
+        "rol": "Imágenes de productos",
+        "supuesto": "50 GB",
+        "almacenamiento_gb": 50.0
+      }
+    ],
+    "alternativas": ["EC2 tradicional"],
+    "riesgos": ["Pico de tráfico"],
+    "preguntas_abiertas": [],
+    "diagrama_mermaid": "flowchart LR\n  User --> Lambda\n  Lambda --> S3"
+  },
+  "estimacion": {
+    "items": [
+      {
+        "servicio": "Lambda",
+        "descripcion": "1M req",
+        "cantidad": 1,
+        "costo_unitario_mensual": 2.0,
+        "costo_total_mensual": 2.0,
+        "es_opcional": false
+      }
+    ],
+    "total_mensual": 2.0,
+    "total_anual": 24.0,
+    "region": "us-east-1",
+    "notas": ["Estimación de prueba"]
+  },
+  "hoja_ruta": {
+    "resumen": "Implementación por fases.",
+    "fases": [
+      {
+        "titulo": "Cuenta AWS",
+        "descripcion": "Crear cuenta y activar MFA.",
+        "pasos": ["Registrarse en aws.amazon.com"],
+        "esfuerzo": "bajo",
+        "enlaces": []
+      }
+    ],
+    "checklist_alto_nivel": ["Crear cuenta"],
+    "anexo_tecnico_iam_vpc": "Crear rol IAM con least privilege."
+  },
+  "cumple_presupuesto": true,
+  "opciones_reduccion_coste": []
+}

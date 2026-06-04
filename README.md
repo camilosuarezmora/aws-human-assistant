@@ -1,15 +1,17 @@
-# Calculadora de costos AWS con Pydantic AI
+# Asesor AWS con Pydantic AI
 
-Aplicación que estima costos de infraestructura en **AWS** a partir de preguntas en lenguaje natural. Un agente de [Pydantic AI](https://ai.pydantic.dev/) interpreta la solicitud, invoca herramientas de precios y devuelve un desglose estructurado (`EstimadoCostoAWS`). Incluye interfaz de **línea de comandos** y **interfaz web** con Streamlit.
+Aplicación que ayuda a personas **sin conocimientos técnicos** a traducir problemas de negocio en soluciones **AWS** con costes estimados y una hoja de ruta de implementación. Usa [Pydantic AI](https://ai.pydantic.dev/) con un pipeline multi-agente (validación → arquitectura → costos → hoja de ruta). Incluye **formulario inicial** + **chat** en Streamlit y **CLI**.
 
 ## Características
 
-- Agente con **tool calling** para calcular costos por servicio AWS
-- Salida tipada con **Pydantic** (ítems, totales mensual/anual, notas)
-- **CLI** y **GUI** comparten la misma lógica de negocio (`backend/services/calculator.py`)
-- Arquitectura en capas: **backend** (dominio y agentes) y **frontend** (presentación)
-- Validación de prompts para rechazar preguntas fuera de tema
-- Historial de conversación dentro de cada sesión
+- **Intake híbrido:** formulario de negocio + chat para afinar
+- **Pipeline multi-agente:** arquitecto, calculador con tools, generador de hoja de ruta (IAM/VPC)
+- **Tool calling** para ~18 servicios AWS (EC2, RDS, Lambda, ALB, CloudFront, Fargate, etc.)
+- Salida tipada: `PropuestaCompletaAWS` (arquitectura, `EstimadoCostoAWS`, `HojaRutaAWS`)
+- Comparación con **presupuesto** del intake y rediseño automático si se excede
+- Exportación de propuesta en **Markdown**
+- **CLI** y **GUI** comparten `backend/services/orchestrator.py`
+- Precios EC2/RDS vía AWS Price List API (opcional); resto con tablas de referencia
 
 ### Servicios AWS soportados
 
@@ -25,6 +27,14 @@ Aplicación que estima costos de infraestructura en **AWS** a partir de pregunta
 | `costo_dynamodb` | DynamoDB |
 | `costo_sns` | SNS |
 | `costo_sqs` | SQS |
+| `costo_alb` | Application Load Balancer |
+| `costo_cloudfront` | CloudFront |
+| `costo_route53` | Route 53 |
+| `costo_fargate` | Fargate |
+| `costo_ecs` | ECS |
+| `costo_cognito` | Cognito |
+| `costo_cloudwatch` | CloudWatch Logs |
+| `costo_nat_gateway` | NAT Gateway |
 
 ## Stack tecnológico
 

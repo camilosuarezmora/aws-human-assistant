@@ -1,0 +1,10 @@
+{
+  "tipo_negocio": "SaaS / aplicación web",
+  "problema": "Dashboard B2B con login y API",
+  "rango_usuarios": "500_5000",
+  "sensibilidad_datos": "alta",
+  "presupuesto_mensual_usd": 500.0,
+  "region": "eu-west-1",
+  "preferencia": "rendimiento",
+  "restricciones": []
+}

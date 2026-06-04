@@ -7,6 +7,24 @@
       "skillPath": "skills/clean-code/SKILL.md",
       "computedHash": "74bf6ded4f61ddcb593e7a29beb96c284f888cbe0639ad6e23710447c36ff19a"
     },
+    "developing-with-streamlit": {
+      "source": "streamlit/agent-skills",
+      "sourceType": "github",
+      "skillPath": "developing-with-streamlit/SKILL.md",
+      "computedHash": "9f8006c37398b5c6a27043bdfe3a25d4aafdfb53413618c88d2c978932f9d08e"
+    },
+    "groq-api": {
+      "source": "diskd-ai/groq-api",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "3060aa52c45c0719b781d439a68d56908fb8972cab8f7b9df8900d3077610dad"
+    },
+    "nlp-natural-language-processing": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "nlp-natural-language-processing/SKILL.md",
+      "computedHash": "c71bf8d1310a5acce56c0ece0f0ae0b4c36c5dc905d2a02ac941187064fe6626"
+    },
     "python-performance-optimization": {
       "source": "wshobson/agents",
       "sourceType": "github",

@@ -143,6 +143,123 @@ def costo_sqs(millones_peticiones: float) -> CostoItem:
     )
 
 
+def costo_alb(cantidad: int = 1) -> CostoItem:
+    """Calcula costo de Application Load Balancer (tarifa base mensual referencia)."""
+    precio = p.PRECIO_ALB_MENSUAL
+    costo_total = precio * cantidad
+    return CostoItem(
+        servicio='ALB',
+        descripcion=f'{cantidad} Application Load Balancer(es)',
+        cantidad=cantidad,
+        costo_unitario_mensual=precio,
+        costo_total_mensual=costo_total,
+    )
+
+
+def costo_cloudfront(gb_salientes: float) -> CostoItem:
+    """Calcula costo de CloudFront por GB transferido (estimación)."""
+    costo_total = gb_salientes * p.PRECIO_CLOUDFRONT_POR_GB
+    return CostoItem(
+        servicio='CloudFront',
+        descripcion=f'{gb_salientes}GB transferidos vía CDN',
+        cantidad=1,
+        costo_unitario_mensual=costo_total,
+        costo_total_mensual=costo_total,
+    )
+
+
+def costo_route53(hosted_zones: int = 1) -> CostoItem:
+    """Calcula costo de Route 53 hosted zones."""
+    precio = p.PRECIO_ROUTE53_HOSTED_ZONE_MENSUAL
+    costo_total = precio * hosted_zones
+    return CostoItem(
+        servicio='Route53',
+        descripcion=f'{hosted_zones} hosted zone(s) DNS',
+        cantidad=hosted_zones,
+        costo_unitario_mensual=precio,
+        costo_total_mensual=costo_total,
+    )
+
+
+def costo_fargate(
+    vcpu: float = 0.25,
+    memoria_gb: float = 0.5,
+    horas_mes: float = 730,
+) -> CostoItem:
+    """Calcula costo de AWS Fargate (vCPU y memoria por hora)."""
+    costo_hora = (
+        vcpu * p.PRECIO_FARGATE_VCPU_HORA + memoria_gb * p.PRECIO_FARGATE_GB_HORA
+    )
+    costo_total = costo_hora * horas_mes
+    return CostoItem(
+        servicio='Fargate',
+        descripcion=f'Fargate {vcpu} vCPU, {memoria_gb}GB RAM, {horas_mes}h/mes',
+        cantidad=1,
+        costo_unitario_mensual=costo_total,
+        costo_total_mensual=costo_total,
+    )
+
+
+def costo_ecs(cantidad: int = 1) -> CostoItem:
+    """Calcula costo referencia de cluster ECS pequeño (sin Fargate incluido)."""
+    precio = p.PRECIO_ECS_CLUSTER_REF_MENSUAL
+    costo_total = precio * cantidad
+    return CostoItem(
+        servicio='ECS',
+        descripcion=f'{cantidad} cluster(s) ECS (tarifa control plan referencia)',
+        cantidad=cantidad,
+        costo_unitario_mensual=precio,
+        costo_total_mensual=costo_total,
+    )
+
+
+def costo_cognito(usuarios_mau: int = 1000) -> CostoItem:
+    """Calcula costo de Amazon Cognito por usuarios activos mensuales."""
+    costo_total = usuarios_mau * p.PRECIO_COGNITO_POR_MAU
+    return CostoItem(
+        servicio='Cognito',
+        descripcion=f'{usuarios_mau} usuarios activos mensuales (MAU)',
+        cantidad=1,
+        costo_unitario_mensual=costo_total,
+        costo_total_mensual=costo_total,
+    )
+
+
+def costo_cloudwatch(gb_logs: float = 5) -> CostoItem:
+    """Calcula costo de CloudWatch Logs por GB ingerido."""
+    costo_total = gb_logs * p.PRECIO_CLOUDWATCH_LOG_POR_GB
+    return CostoItem(
+        servicio='CloudWatch',
+        descripcion=f'{gb_logs}GB de logs ingeridos',
+        cantidad=1,
+        costo_unitario_mensual=costo_total,
+        costo_total_mensual=costo_total,
+    )
+
+
+def costo_nat_gateway(cantidad: int = 1) -> CostoItem:
+    """Calcula costo de NAT Gateway (tarifa base mensual referencia)."""
+    precio = p.PRECIO_NAT_GATEWAY_MENSUAL
+    costo_total = precio * cantidad
+    return CostoItem(
+        servicio='NAT Gateway',
+        descripcion=f'{cantidad} NAT Gateway(s)',
+        cantidad=cantidad,
+        costo_unitario_mensual=precio,
+        costo_total_mensual=costo_total,
+    )
+
+
+def obtener_fuente_precio(servicio: str) -> str:
+    """Indica si el servicio usa API AWS en vivo o tabla estática."""
+    if servicio.upper() in ('EC2', 'RDS'):
+        return (
+            f'{servicio}: AWS Price List API si está habilitada, '
+            f'si no tabla {p.FECHA_PRECIOS_ESTATICOS}'
+        )
+    return f'{servicio}: tabla estática {p.FECHA_PRECIOS_ESTATICOS}'
+
+
 ALL_TOOLS = [
     costo_ec2,
     costo_rds,
@@ -154,4 +271,13 @@ ALL_TOOLS = [
     costo_dynamodb,
     costo_sns,
     costo_sqs,
+    costo_alb,
+    costo_cloudfront,
+    costo_route53,
+    costo_fargate,
+    costo_ecs,
+    costo_cognito,
+    costo_cloudwatch,
+    costo_nat_gateway,
+    obtener_fuente_precio,
 ]
