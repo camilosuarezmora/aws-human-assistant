@@ -8,7 +8,6 @@ from backend.config import groq_api_key_configured, load_environment
 from backend.models import ContextoNegocio
 from backend.services.calculator import crear_sesion, procesar_mensaje, actualizar_contexto
 from frontend.streamlit.components import render_chat_history, render_sidebar
-from frontend.streamlit.env import streamlit_secrets_as_env
 from frontend.streamlit.intake import render_intake
 
 FASES_SPINNER = {
@@ -19,7 +18,7 @@ FASES_SPINNER = {
 
 
 def _ensure_groq_configured() -> bool:
-    load_environment(extra_env=streamlit_secrets_as_env())
+    load_environment()
     return groq_api_key_configured()
 
 

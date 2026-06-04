@@ -196,7 +196,8 @@ Paquete sin dependencias de UI. Contiene modelos, precios, agentes LLM y la orqu
 | `PROJECT_ROOT` | Ruta a la raíz del repo (para localizar `.env`) |
 | `GROQ_MODEL_NAME` | Modelo por defecto: `llama-3.3-70b-versatile` |
 | `DEFAULT_REGION` | Región AWS por defecto: `us-east-1` |
-| `load_environment()` | Carga `PROJECT_ROOT/.env` con `python-dotenv` |
+| `load_environment()` | Carga `.env`; bajo `streamlit run` también `st.secrets` (Cloud / `secrets.toml`) |
+| `STREAMLIT_SECRET_KEYS` | Claves que se leen de Secrets de Streamlit si faltan en el entorno |
 | `pricing_api_region()` | Endpoint del cliente pricing (`PRICING_API_REGION`, default `us-east-1`) |
 | `pricing_cache_ttl_seconds()` | TTL de caché (`PRICING_CACHE_TTL_SECONDS`, default 86400) |
 
