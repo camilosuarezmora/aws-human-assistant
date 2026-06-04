@@ -1,17 +1,43 @@
 import json
 from unittest.mock import MagicMock
 
+import pytest
+
 from backend.aws_pricing_client import (
+    consultar_precio_usd,
     extraer_precio_on_demand_usd,
+    extraer_precio_usd,
     filtros_ec2,
     filtros_rds,
+    filtros_s3_standard,
     get_products,
     precio_on_demand_hora,
+    requerir_precio_usd,
 )
+from backend.pricing_exceptions import PricingUnavailableError
 
 
 def test_extraer_precio_on_demand_usd(ec2_product):
     assert extraer_precio_on_demand_usd(ec2_product) == 0.0104
+
+
+def test_extraer_precio_usd_gb_mo():
+    product = {
+        'terms': {
+            'OnDemand': {
+                'T': {
+                    'priceDimensions': {
+                        'D': {
+                            'unit': 'GB-Mo',
+                            'pricePerUnit': {'USD': '0.023'},
+                        }
+                    }
+                }
+            }
+        }
+    }
+    assert extraer_precio_usd(product, units=('GB-Mo',)) == 0.023
+    assert extraer_precio_usd(product, units=('Hrs',)) is None
 
 
 def test_extraer_precio_sin_on_demand():
@@ -31,6 +57,12 @@ def test_filtros_rds_mysql_single_az():
     fields = {f['Field']: f['Value'] for f in filtros}
     assert fields['databaseEngine'] == 'MySQL'
     assert fields['deploymentOption'] == 'Single-AZ'
+
+
+def test_filtros_s3_standard():
+    filtros = filtros_s3_standard('us-east-1')
+    fields = {f['Field']: f['Value'] for f in filtros}
+    assert fields['storageClass'] == 'General Purpose'
 
 
 def test_get_products_parsea_price_list(ec2_product):
@@ -63,3 +95,29 @@ def test_precio_on_demand_hora(ec2_product):
         client=client,
     )
     assert precio == 0.0104
+
+
+def test_consultar_precio_usd_sin_resultados():
+    client = MagicMock()
+    client.get_products.return_value = {'PriceList': []}
+    assert (
+        consultar_precio_usd(
+            'AmazonS3',
+            filtros_s3_standard('us-east-1'),
+            client=client,
+        )
+        is None
+    )
+
+
+def test_requerir_precio_usd_lanza_error():
+    client = MagicMock()
+    client.get_products.return_value = {'PriceList': []}
+    with pytest.raises(PricingUnavailableError):
+        requerir_precio_usd(
+            'AmazonS3',
+            filtros_s3_standard('us-east-1'),
+            servicio='S3',
+            region='us-east-1',
+            client=client,
+        )

@@ -1,11 +1,36 @@
-"""Herramientas de cálculo de costos expuestas al agente."""
+"""Herramientas de cálculo de costos expuestas al agente (precios solo vía API AWS)."""
 
+from backend.config import DEFAULT_REGION
 from backend.models import CostoItem
-from backend import pricing as p
-from backend.pricing_resolver import precio_ec2_mensual, precio_rds_mensual
+from backend.pricing_resolver import (
+    FUENTE_PRECIO,
+    HORAS_MES,
+    precio_alb_mensual,
+    precio_api_gateway_por_millon,
+    precio_cloudfront_gb,
+    precio_cloudwatch_logs_gb,
+    precio_cognito_por_mau,
+    precio_dynamodb_escritura_millon,
+    precio_dynamodb_lectura_millon,
+    precio_ec2_mensual,
+    precio_ecs_cluster_mes,
+    precio_elasticache_mensual,
+    precio_fargate_gb_hora,
+    precio_fargate_vcpu_hora,
+    precio_lambda_gb_segundo,
+    precio_lambda_por_millon_requests,
+    precio_nat_gateway_mensual,
+    precio_rds_mensual,
+    precio_rds_storage_gb_mes,
+    precio_route53_hosted_zone_mes,
+    precio_s3_gb_mes,
+    precio_sns_por_millon,
+    precio_sqs_por_millon,
+    precio_transferencia_gb,
+)
 
 
-def costo_ec2(tipo_instancia: str, cantidad: int = 1, region: str = 'us-east-1') -> CostoItem:
+def costo_ec2(tipo_instancia: str, cantidad: int = 1, region: str = DEFAULT_REGION) -> CostoItem:
     """Calcula costo de instancias EC2."""
     precio = precio_ec2_mensual(tipo_instancia, region)
     costo_total = precio * cantidad
@@ -22,12 +47,13 @@ def costo_rds(
     tipo_instancia: str,
     cantidad: int = 1,
     storage_gb: int = 20,
-    region: str = 'us-east-1',
+    region: str = DEFAULT_REGION,
 ) -> CostoItem:
     """Calcula costo de RDS (base de datos gestionada)."""
     precio_instancia = precio_rds_mensual(tipo_instancia, region)
+    precio_storage = precio_rds_storage_gb_mes(region)
     costo_instancia = precio_instancia * cantidad
-    costo_storage = p.PRECIO_RDS_STORAGE_POR_GB * storage_gb * cantidad
+    costo_storage = precio_storage * storage_gb * cantidad
     costo_total = costo_instancia + costo_storage
     return CostoItem(
         servicio='RDS',
@@ -40,116 +66,141 @@ def costo_rds(
     )
 
 
-def costo_elasticache(tipo_instancia: str, cantidad: int = 1) -> CostoItem:
+def costo_elasticache(
+    tipo_instancia: str,
+    cantidad: int = 1,
+    region: str = DEFAULT_REGION,
+) -> CostoItem:
     """Calcula costo de ElastiCache (Redis/Memcached)."""
-    precio = p.PRECIOS_ELASTICACHE.get(tipo_instancia.lower(), 0.024)
+    precio = precio_elasticache_mensual(tipo_instancia, region)
     costo_total = precio * cantidad
     return CostoItem(
         servicio='ElastiCache',
-        descripcion=f'{cantidad} nodo(s) {tipo_instancia}',
+        descripcion=f'{cantidad} nodo(s) {tipo_instancia} ({region})',
         cantidad=cantidad,
         costo_unitario_mensual=precio,
         costo_total_mensual=costo_total,
     )
 
 
-def costo_s3(almacenamiento_gb: float) -> CostoItem:
+def costo_s3(almacenamiento_gb: float, region: str = DEFAULT_REGION) -> CostoItem:
     """Calcula costo de S3 (almacenamiento de objetos)."""
-    costo_total = almacenamiento_gb * p.PRECIO_S3_POR_GB
+    precio_gb = precio_s3_gb_mes(region)
+    costo_total = almacenamiento_gb * precio_gb
     return CostoItem(
         servicio='S3',
-        descripcion=f'{almacenamiento_gb}GB de almacenamiento S3 Standard',
+        descripcion=f'{almacenamiento_gb}GB de almacenamiento S3 Standard ({region})',
         cantidad=1,
         costo_unitario_mensual=costo_total,
         costo_total_mensual=costo_total,
     )
 
 
-def costo_transferencia_datos(gb_salientes: float) -> CostoItem:
+def costo_transferencia_datos(
+    gb_salientes: float,
+    region: str = DEFAULT_REGION,
+) -> CostoItem:
     """Calcula costo de transferencia de datos saliente."""
-    costo_total = gb_salientes * p.PRECIO_TRANSFERENCIA_POR_GB
+    precio_gb = precio_transferencia_gb(region)
+    costo_total = gb_salientes * precio_gb
     return CostoItem(
         servicio='Transferencia de Datos',
-        descripcion=f'{gb_salientes}GB de transferencia saliente',
+        descripcion=f'{gb_salientes}GB de transferencia saliente ({region})',
         cantidad=1,
         costo_unitario_mensual=costo_total,
         costo_total_mensual=costo_total,
     )
 
 
-def costo_lambda(millones_peticiones: float = 0, gb_segundos: float = 0) -> CostoItem:
+def costo_lambda(
+    millones_peticiones: float = 0,
+    gb_segundos: float = 0,
+    region: str = DEFAULT_REGION,
+) -> CostoItem:
     """Calcula costo de AWS Lambda."""
+    precio_req = precio_lambda_por_millon_requests(region)
+    precio_gb_s = precio_lambda_gb_segundo(region)
     costo_total = (
-        millones_peticiones * p.PRECIO_LAMBDA_POR_MILLON_REQ
-        + gb_segundos * p.PRECIO_LAMBDA_POR_GB_SEGUNDO
+        millones_peticiones * precio_req + gb_segundos * precio_gb_s
     )
     return CostoItem(
         servicio='Lambda',
-        descripcion=f'{millones_peticiones}M peticiones, {gb_segundos}GB-segundos',
+        descripcion=f'{millones_peticiones}M peticiones, {gb_segundos}GB-segundos ({region})',
         cantidad=1,
         costo_unitario_mensual=costo_total,
         costo_total_mensual=costo_total,
     )
 
 
-def costo_api_gateway(millones_peticiones: float) -> CostoItem:
+def costo_api_gateway(
+    millones_peticiones: float,
+    region: str = DEFAULT_REGION,
+) -> CostoItem:
     """Calcula costo de API Gateway."""
-    costo_total = millones_peticiones * p.PRECIO_API_GATEWAY_POR_MILLON
+    precio = precio_api_gateway_por_millon(region)
+    costo_total = millones_peticiones * precio
     return CostoItem(
         servicio='API Gateway',
-        descripcion=f'{millones_peticiones}M peticiones API REST',
+        descripcion=f'{millones_peticiones}M peticiones API REST ({region})',
         cantidad=1,
         costo_unitario_mensual=costo_total,
         costo_total_mensual=costo_total,
     )
 
 
-def costo_dynamodb(millones_escrituras: float = 0, millones_lecturas: float = 0) -> CostoItem:
+def costo_dynamodb(
+    millones_escrituras: float = 0,
+    millones_lecturas: float = 0,
+    region: str = DEFAULT_REGION,
+) -> CostoItem:
     """Calcula costo de DynamoDB."""
-    costo_total = (
-        millones_escrituras * p.PRECIO_DYNAMODB_ESCRITURA
-        + millones_lecturas * p.PRECIO_DYNAMODB_LECTURA
-    )
+    precio_w = precio_dynamodb_escritura_millon(region)
+    precio_r = precio_dynamodb_lectura_millon(region)
+    costo_total = millones_escrituras * precio_w + millones_lecturas * precio_r
     return CostoItem(
         servicio='DynamoDB',
-        descripcion=f'{millones_escrituras}M escrituras, {millones_lecturas}M lecturas',
+        descripcion=(
+            f'{millones_escrituras}M escrituras, {millones_lecturas}M lecturas ({region})'
+        ),
         cantidad=1,
         costo_unitario_mensual=costo_total,
         costo_total_mensual=costo_total,
     )
 
 
-def costo_sns(millones_peticiones: float) -> CostoItem:
+def costo_sns(millones_peticiones: float, region: str = DEFAULT_REGION) -> CostoItem:
     """Calcula costo de SNS (Simple Notification Service)."""
-    costo_total = millones_peticiones * p.PRECIO_SNS_POR_MILLON
+    precio = precio_sns_por_millon(region)
+    costo_total = millones_peticiones * precio
     return CostoItem(
         servicio='SNS',
-        descripcion=f'{millones_peticiones}M notificaciones',
+        descripcion=f'{millones_peticiones}M notificaciones ({region})',
         cantidad=1,
         costo_unitario_mensual=costo_total,
         costo_total_mensual=costo_total,
     )
 
 
-def costo_sqs(millones_peticiones: float) -> CostoItem:
+def costo_sqs(millones_peticiones: float, region: str = DEFAULT_REGION) -> CostoItem:
     """Calcula costo de SQS (Simple Queue Service)."""
-    costo_total = millones_peticiones * p.PRECIO_SQS_POR_MILLON
+    precio = precio_sqs_por_millon(region)
+    costo_total = millones_peticiones * precio
     return CostoItem(
         servicio='SQS',
-        descripcion=f'{millones_peticiones}M mensajes en cola',
+        descripcion=f'{millones_peticiones}M mensajes en cola ({region})',
         cantidad=1,
         costo_unitario_mensual=costo_total,
         costo_total_mensual=costo_total,
     )
 
 
-def costo_alb(cantidad: int = 1) -> CostoItem:
-    """Calcula costo de Application Load Balancer (tarifa base mensual referencia)."""
-    precio = p.PRECIO_ALB_MENSUAL
+def costo_alb(cantidad: int = 1, region: str = DEFAULT_REGION) -> CostoItem:
+    """Calcula costo de Application Load Balancer (tarifa base mensual desde API)."""
+    precio = precio_alb_mensual(region)
     costo_total = precio * cantidad
     return CostoItem(
         servicio='ALB',
-        descripcion=f'{cantidad} Application Load Balancer(es)',
+        descripcion=f'{cantidad} Application Load Balancer(es) ({region})',
         cantidad=cantidad,
         costo_unitario_mensual=precio,
         costo_total_mensual=costo_total,
@@ -157,8 +208,9 @@ def costo_alb(cantidad: int = 1) -> CostoItem:
 
 
 def costo_cloudfront(gb_salientes: float) -> CostoItem:
-    """Calcula costo de CloudFront por GB transferido (estimación)."""
-    costo_total = gb_salientes * p.PRECIO_CLOUDFRONT_POR_GB
+    """Calcula costo de CloudFront por GB transferido."""
+    precio_gb = precio_cloudfront_gb()
+    costo_total = gb_salientes * precio_gb
     return CostoItem(
         servicio='CloudFront',
         descripcion=f'{gb_salientes}GB transferidos vía CDN',
@@ -170,7 +222,7 @@ def costo_cloudfront(gb_salientes: float) -> CostoItem:
 
 def costo_route53(hosted_zones: int = 1) -> CostoItem:
     """Calcula costo de Route 53 hosted zones."""
-    precio = p.PRECIO_ROUTE53_HOSTED_ZONE_MENSUAL
+    precio = precio_route53_hosted_zone_mes()
     costo_total = precio * hosted_zones
     return CostoItem(
         servicio='Route53',
@@ -184,66 +236,70 @@ def costo_route53(hosted_zones: int = 1) -> CostoItem:
 def costo_fargate(
     vcpu: float = 0.25,
     memoria_gb: float = 0.5,
-    horas_mes: float = 730,
+    horas_mes: float = HORAS_MES,
+    region: str = DEFAULT_REGION,
 ) -> CostoItem:
     """Calcula costo de AWS Fargate (vCPU y memoria por hora)."""
     costo_hora = (
-        vcpu * p.PRECIO_FARGATE_VCPU_HORA + memoria_gb * p.PRECIO_FARGATE_GB_HORA
+        vcpu * precio_fargate_vcpu_hora(region)
+        + memoria_gb * precio_fargate_gb_hora(region)
     )
     costo_total = costo_hora * horas_mes
     return CostoItem(
         servicio='Fargate',
-        descripcion=f'Fargate {vcpu} vCPU, {memoria_gb}GB RAM, {horas_mes}h/mes',
+        descripcion=f'Fargate {vcpu} vCPU, {memoria_gb}GB RAM, {horas_mes}h/mes ({region})',
         cantidad=1,
         costo_unitario_mensual=costo_total,
         costo_total_mensual=costo_total,
     )
 
 
-def costo_ecs(cantidad: int = 1) -> CostoItem:
-    """Calcula costo referencia de cluster ECS pequeño (sin Fargate incluido)."""
-    precio = p.PRECIO_ECS_CLUSTER_REF_MENSUAL
+def costo_ecs(cantidad: int = 1, region: str = DEFAULT_REGION) -> CostoItem:
+    """Calcula costo del plano de control ECS desde API."""
+    precio = precio_ecs_cluster_mes(region)
     costo_total = precio * cantidad
     return CostoItem(
         servicio='ECS',
-        descripcion=f'{cantidad} cluster(s) ECS (tarifa control plan referencia)',
+        descripcion=f'{cantidad} cluster(s) ECS ({region})',
         cantidad=cantidad,
         costo_unitario_mensual=precio,
         costo_total_mensual=costo_total,
     )
 
 
-def costo_cognito(usuarios_mau: int = 1000) -> CostoItem:
+def costo_cognito(usuarios_mau: int = 1000, region: str = DEFAULT_REGION) -> CostoItem:
     """Calcula costo de Amazon Cognito por usuarios activos mensuales."""
-    costo_total = usuarios_mau * p.PRECIO_COGNITO_POR_MAU
+    precio_mau = precio_cognito_por_mau(region)
+    costo_total = usuarios_mau * precio_mau
     return CostoItem(
         servicio='Cognito',
-        descripcion=f'{usuarios_mau} usuarios activos mensuales (MAU)',
+        descripcion=f'{usuarios_mau} usuarios activos mensuales (MAU) ({region})',
         cantidad=1,
         costo_unitario_mensual=costo_total,
         costo_total_mensual=costo_total,
     )
 
 
-def costo_cloudwatch(gb_logs: float = 5) -> CostoItem:
+def costo_cloudwatch(gb_logs: float = 5, region: str = DEFAULT_REGION) -> CostoItem:
     """Calcula costo de CloudWatch Logs por GB ingerido."""
-    costo_total = gb_logs * p.PRECIO_CLOUDWATCH_LOG_POR_GB
+    precio_gb = precio_cloudwatch_logs_gb(region)
+    costo_total = gb_logs * precio_gb
     return CostoItem(
         servicio='CloudWatch',
-        descripcion=f'{gb_logs}GB de logs ingeridos',
+        descripcion=f'{gb_logs}GB de logs ingeridos ({region})',
         cantidad=1,
         costo_unitario_mensual=costo_total,
         costo_total_mensual=costo_total,
     )
 
 
-def costo_nat_gateway(cantidad: int = 1) -> CostoItem:
-    """Calcula costo de NAT Gateway (tarifa base mensual referencia)."""
-    precio = p.PRECIO_NAT_GATEWAY_MENSUAL
+def costo_nat_gateway(cantidad: int = 1, region: str = DEFAULT_REGION) -> CostoItem:
+    """Calcula costo de NAT Gateway (tarifa base mensual desde API)."""
+    precio = precio_nat_gateway_mensual(region)
     costo_total = precio * cantidad
     return CostoItem(
         servicio='NAT Gateway',
-        descripcion=f'{cantidad} NAT Gateway(s)',
+        descripcion=f'{cantidad} NAT Gateway(s) ({region})',
         cantidad=cantidad,
         costo_unitario_mensual=precio,
         costo_total_mensual=costo_total,
@@ -251,13 +307,8 @@ def costo_nat_gateway(cantidad: int = 1) -> CostoItem:
 
 
 def obtener_fuente_precio(servicio: str) -> str:
-    """Indica si el servicio usa API AWS en vivo o tabla estática."""
-    if servicio.upper() in ('EC2', 'RDS'):
-        return (
-            f'{servicio}: AWS Price List API si está habilitada, '
-            f'si no tabla {p.FECHA_PRECIOS_ESTATICOS}'
-        )
-    return f'{servicio}: tabla estática {p.FECHA_PRECIOS_ESTATICOS}'
+    """Indica la fuente de precios (siempre AWS Price List API)."""
+    return f'{servicio}: {FUENTE_PRECIO}'
 
 
 ALL_TOOLS = [

@@ -17,7 +17,7 @@ CAPACIDADES_CALCULO: dict[ServicioCalculable, str] = {
     'CloudFront': 'gb_salientes (tráfico CDN)',
     'Route53': 'hosted_zones',
     'Fargate': 'vcpu, memoria_gb, horas_mes',
-    'ECS': 'cantidad (clusters pequeños, tarifa fija referencia)',
+    'ECS': 'cantidad, region (plano de control ECS)',
     'Cognito': 'usuarios_mau (usuarios activos mensuales)',
     'CloudWatch': 'gb_logs',
     'NAT Gateway': 'cantidad',

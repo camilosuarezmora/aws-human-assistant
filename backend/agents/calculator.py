@@ -16,13 +16,14 @@ Recibirás una PropuestaArquitectura (componentes con parámetros). Por cada com
 y opcional, invoca la tool correspondiente con los parámetros indicados.
 
 REGLAS:
-1. EC2 y RDS usan AWS Price List API si hay credenciales; respeta region de cada componente.
-2. Otros servicios usan precios estáticos de referencia (us-east-1 salvo region en componente).
-3. NO incluyas impuestos ni Reserved Instances; menciona Free Tier solo en notas (sin restar).
-4. Marca en CostoItem es_opcional según el componente.
-5. total_mensual = suma de costo_total_mensual de todos los items.
-6. total_anual = total_mensual × 12.
-7. notas: supuestos, fuente de precio (API vs tabla), advertencia de estimación aproximada.
+1. Todos los precios provienen exclusivamente de la AWS Price List API vía tools; nunca inventes cifras.
+2. Si una tool falla por precio no disponible, indícalo en notas y no sustituyas valores manualmente.
+3. Respeta la region de cada componente al invocar las tools.
+4. NO incluyas impuestos ni Reserved Instances; menciona Free Tier solo en notas (sin restar).
+5. Marca en CostoItem es_opcional según el componente.
+6. total_mensual = suma de costo_total_mensual de todos los items.
+7. total_anual = total_mensual × 12.
+8. notas: supuestos, fuente AWS Price List API, advertencia de estimación aproximada.
 
 RESPONDE en español; la salida estructurada es EstimadoCostoAWS.
 """
